@@ -1,75 +1,106 @@
 package com.example.android.todolistmanager;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.support.v7.widget.RecyclerView;
-import android.view.ContextMenu;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 
 public class MyAdapter extends RecyclerView.Adapter<MyAdapter.ViewHolder> {
 
-    private List<String> ToDoList;
-    private int position;
+    private List<DataEntry> ToDoList;
+    private static SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy");
 
-    public static class ViewHolder extends RecyclerView.ViewHolder implements
-            View.OnCreateContextMenuListener {
+    public static class ViewHolder extends RecyclerView.ViewHolder {
 
-        public TextView mTextView;
+        public TextView task;
+        public TextView date;
 
-        public ViewHolder(TextView v) {
+        public ViewHolder(ViewGroup v) {
             super(v);
-            mTextView = v;
-            v.setOnCreateContextMenuListener(this);
+            task = (TextView) v.findViewById(R.id.task);
+            date = (TextView) v.findViewById(R.id.date);
         }
-
-        @Override
-        public void onCreateContextMenu(ContextMenu menu, View v,
-                                        ContextMenu.ContextMenuInfo menuInfo) {
-            menu.add(0, v.getId(), 0, "Delete").setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-                @Override
-                public boolean onMenuItemClick(MenuItem item) {
-                    //TODO delete somehow from ToDoList
-                    return true;
-                }
-            });
-        }
-
-
     }
 
-    public void setPosition(int position) {
-        this.position = position;
-    }
 
-    public MyAdapter(List<String> list) {
+    public MyAdapter(List<DataEntry> list) {
         this.ToDoList = list;
     }
 
     @Override
-    public MyAdapter.ViewHolder onCreateViewHolder(ViewGroup parent,
-                                                   int viewType) {
-        // create a new view
-        TextView v = (TextView) LayoutInflater.from(parent.getContext())
-                .inflate(android.R.layout.simple_list_item_1, parent, false);
+    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        final ViewGroup viewGroup = (ViewGroup) LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item, parent, false);
 
-        ViewHolder vh = new ViewHolder(v);
+        final ViewHolder vh = new ViewHolder(viewGroup);
+
+
+        viewGroup.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
+                builder.setTitle(vh.task.getText());
+                builder.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        removeAt(vh.getAdapterPosition());
+
+                        Collections.sort(ToDoList, new Comparator<DataEntry>() {
+                            @Override
+                            public int compare(DataEntry o1, DataEntry o2) {
+                                return o1.getDate().compareTo(o2.getDate());
+                            }
+                        });
+                        notifyDataSetChanged();
+                    }
+                });
+                String testText = vh.task.getText().toString();
+                if (testText.startsWith("call") || testText.startsWith("Call")) {
+                    builder.setNegativeButton("call", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+
+                        }
+                    });
+                }
+                builder.setNeutralButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                    }
+                }).create().show();
+            }
+        });
+
         return vh;
     }
 
     @Override
-    public void onBindViewHolder(final ViewHolder holder, int position) {
-        if(position % 2 == 0) {
-            holder.mTextView.setBackgroundColor(Color.RED);
-        } else {
-            holder.mTextView.setBackgroundColor(Color.BLUE);
-        }
+    public void onBindViewHolder(ViewHolder holder, int position) {
+        holder.date.setText(format.format(ToDoList.get(position).getDate().getTime()));
+        holder.task.setText(ToDoList.get(position).getTask());
 
-        holder.mTextView.setText(ToDoList.get(position));
+        if (ToDoList.get(position).getDate().before(Calendar.getInstance())){
+            holder.date.setTextColor(Color.RED);
+            holder.task.setTextColor(Color.RED);
+        } else {
+            holder.date.setTextColor(Color.GRAY);
+            holder.date.setTextColor(Color.GRAY);
+        }
+    }
+
+    public void removeAt(int index){
+        ToDoList.remove(index);
     }
 
     @Override
